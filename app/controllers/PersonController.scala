@@ -3,6 +3,7 @@ package controllers
 import cats.effect.{Blocker, IO, Resource}
 import doobie._
 import doobie.implicits._
+import infra.DoobieTransactor
 import javax.inject._
 import javax.sql.DataSource
 import models._
@@ -15,7 +16,7 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PersonController @Inject()(cc: MessagesControllerComponents, db: Database)(
+class PersonController @Inject()(cc: MessagesControllerComponents, doobie: DoobieTransactor)(
   implicit ec: ExecutionContext
 ) extends MessagesAbstractController(cc) {
 
@@ -23,11 +24,6 @@ class PersonController @Inject()(cc: MessagesControllerComponents, db: Database)
 
   import UserRepositoryOnJDBC._
 
-  def transactor(ds: DataSource): Resource[IO, DataSourceTransactor[IO]] =
-    for {
-      ce <- ExecutionContexts.fixedThreadPool[IO](32) // our connect EC
-      be <- Blocker[IO] // our blocking EC
-    } yield Transactor.fromDataSource[IO](ds, ce, be)
 
   /**
     * The mapping for the person form.
@@ -47,7 +43,7 @@ class PersonController @Inject()(cc: MessagesControllerComponents, db: Database)
   }
 
   def test = Action { implicit request =>
-    val res = transactor(db.dataSource)
+    val res = doobie.tx()
       .use { xa =>
         UserRepository[ConnectionIO].resolveByName("Kris").transact(xa)
       }
@@ -71,7 +67,7 @@ class PersonController @Inject()(cc: MessagesControllerComponents, db: Database)
       },
       // There were no errors in the from, so create the person.
       person => {
-        val res = transactor(db.dataSource)
+        val res = doobie.tx()
           .use { xa =>
             UserRepository[ConnectionIO].store(Person(1L, person.name, person.age)).transact(xa)
           }
