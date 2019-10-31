@@ -1,29 +1,19 @@
 package controllers
 
-import cats.effect.{Blocker, IO, Resource}
-import doobie._
-import doobie.implicits._
-import infra.DoobieTransactor
 import javax.inject._
-import javax.sql.DataSource
 import models._
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
-import play.api.db.Database
-import play.api.libs.json.Json
 import play.api.mvc._
+import services.PersonService
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PersonController @Inject()(cc: MessagesControllerComponents, doobie: DoobieTransactor)(
-  implicit ec: ExecutionContext
-) extends MessagesAbstractController(cc) {
-
-  implicit val cs = IO.contextShift(ec)
-
-  import UserRepositoryOnJDBC._
-
+class PersonController @Inject()(cc: MessagesControllerComponents,
+                                 personService: PersonService)(
+                                  implicit ec: ExecutionContext
+                                ) extends MessagesAbstractController(cc) {
 
   /**
     * The mapping for the person form.
@@ -43,11 +33,7 @@ class PersonController @Inject()(cc: MessagesControllerComponents, doobie: Doobi
   }
 
   def test = Action { implicit request =>
-    val res = doobie.tx()
-      .use { xa =>
-        UserRepository[ConnectionIO].resolveByName("Kris").transact(xa)
-      }
-      .unsafeRunSync()
+    val res = personService.findPersonByName("Kris").unsafeRunSync()
     Ok("" + res)
   }
 
@@ -67,16 +53,15 @@ class PersonController @Inject()(cc: MessagesControllerComponents, doobie: Doobi
       },
       // There were no errors in the from, so create the person.
       person => {
-        val res = doobie.tx()
-          .use { xa =>
-            UserRepository[ConnectionIO].store(Person(1L, person.name, person.age)).transact(xa)
-          }
-          .unsafeToFuture()
-          .map { _ =>
-            // If successful, we simply redirect to the index page.
-            Redirect(routes.PersonController.index)
-              .flashing("success" -> "user.created")
-          }
+        val res =
+          personService
+            .addPerson(Person(None, person.name, person.age))
+            .unsafeToFuture()
+            .map { p =>
+              // If successful, we simply redirect to the index page.
+              Redirect(routes.PersonController.index)
+                .flashing("success" -> "user.created")
+            }
         res
       }
     )
