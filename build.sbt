@@ -19,7 +19,7 @@ libraryDependencies += "org.tpolecat" %% "doobie-core"      % "0.8.4"
 // And add any of these as needed
 libraryDependencies += "org.tpolecat" %% "doobie-h2"        % "0.8.4"// H2 driver 1.4.199 + type mappings.
 libraryDependencies += "org.tpolecat" %% "doobie-hikari"    % "0.8.4"          // HikariCP transactor.
-//libraryDependencies += "org.tpolecat" %% "doobie-postgres"  % "0.8.4",          // Postgres driver 42.2.8 + type mappings.
+libraryDependencies += "org.tpolecat" %% "doobie-postgres"  % "0.8.4"          // Postgres driver 42.2.8 + type mappings.
 //libraryDependencies += "org.tpolecat" %% "doobie-quill"     % "0.8.4",          // Support for Quill 3.4.9
 //libraryDependencies += "org.tpolecat" %% "doobie-specs2"    % "0.8.4" % "test", // Specs2 support for typechecking statements.
 //libraryDependencies += "org.tpolecat" %% "doobie-scalatest" % "0.8.4" % "test"
